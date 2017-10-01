@@ -17,8 +17,8 @@ namespace EssentionTest.Controllers
             if (value.FormatType == "cvs")
             {
                 var cvsText = TextSerializer.SerializeToCvs(value.Text, value.SeparatorCvs);
-                Directory.CreateDirectory("App_Data");
-                using (var fileStream = new FileStream($"App_Data/cvsFile{(DateTime.Now - new DateTime()).Ticks}.cvs", FileMode.OpenOrCreate, FileAccess.Write, FileShare.None))
+                Directory.CreateDirectory("Files");
+                using (var fileStream = new FileStream($"Files/cvsFile{(DateTime.Now - new DateTime()).Ticks}.cvs", FileMode.OpenOrCreate, FileAccess.Write, FileShare.None))
                 {
                     using(var streamWriter = new StreamWriter(fileStream))
                     {
@@ -32,17 +32,14 @@ namespace EssentionTest.Controllers
             {
                 var xmlText = TextSerializer.SerializeToXml(value.Text);
 
-                Directory.CreateDirectory("App_Data");
-                xmlText.Save($"App_Data/xmlFile{(DateTime.Now - new DateTime()).Ticks}.xml");
+                Directory.CreateDirectory("Files");
+                xmlText.Save($"Files/xmlFile{(DateTime.Now - new DateTime()).Ticks}.xml");
 
                 return Ok(xmlText.Root);
             }
             
-            return Ok("format not found");
+            return NoContent();
         }
-
-     
-
        
     }
 

@@ -23,7 +23,6 @@ export class Home extends React.Component<RouteComponentProps<{}>, State> {
         fetch('api/TextSerializer', initFetch)
             .then(response => response.text())
             .then(data => {
-                console.log(data);
                 this.setState({ formatText: data });
             });
     }
