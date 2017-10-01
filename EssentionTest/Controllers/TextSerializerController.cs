@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
-using EssentionTest.Model;
+using EssentionTest.Models;
 using Essention.Text;
 using System.Xml;
 using System.IO;
@@ -10,15 +10,15 @@ namespace EssentionTest.Controllers
     [Route("api/[controller]")]
     public class TextSerializerController : Controller
     {
-
         [HttpPost()]
         public IActionResult SerializerText([FromBody]TextToSerializer value)
         {
+            var folder = "App_Data/Files";
             if (value.FormatType == "cvs")
             {
                 var cvsText = TextSerializer.SerializeToCvs(value.Text, value.SeparatorCvs);
-                Directory.CreateDirectory("Files");
-                using (var fileStream = new FileStream($"Files/cvsFile{(DateTime.Now - new DateTime()).Ticks}.cvs", FileMode.OpenOrCreate, FileAccess.Write, FileShare.None))
+                Directory.CreateDirectory(folder);
+                using (var fileStream = new FileStream($"{folder}/cvsFile{(DateTime.Now - new DateTime()).Ticks}.cvs", FileMode.OpenOrCreate, FileAccess.ReadWrite))
                 {
                     using(var streamWriter = new StreamWriter(fileStream))
                     {
@@ -32,16 +32,13 @@ namespace EssentionTest.Controllers
             {
                 var xmlText = TextSerializer.SerializeToXml(value.Text);
 
-                Directory.CreateDirectory("Files");
-                xmlText.Save($"Files/xmlFile{(DateTime.Now - new DateTime()).Ticks}.xml");
+                Directory.CreateDirectory(folder);
+                xmlText.Save($"{folder}/xmlFile{(DateTime.Now - new DateTime()).Ticks}.xml");
 
                 return Ok(xmlText.Root);
             }
             
-            return NoContent();
+            return BadRequest();
         }
-       
     }
-
-
 }

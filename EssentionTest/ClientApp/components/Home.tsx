@@ -48,14 +48,14 @@ export class Home extends React.Component<RouteComponentProps<{}>, State> {
     }
 
     public formatXml(xml:any) {
-        var formatted = '';
-        var reg = /(>)(<)(\/*)/g;
+        let formatted = '';
+        let reg = /(>)(<)(\/*)/g;
         xml = xml.replace(reg, '$1\r\n$2$3');
-        var pad = 0;
-        var xmlArr = xml.split('\r\n');
-        var xmlMap = xmlArr.map(function (node: any, index: any) {
+        let pad = 0;
+        let xmlArr = xml.split('\r\n');
+        let xmlMap = xmlArr.map(function (node: any, index: any) {
             
-            var indent = 0;
+            let indent = 0;
             if (node.match(/.+<\/\w[^>]*>$/)) {
                 indent = 0;
             } else if (node.match(/^<\/\w/)) {
@@ -68,8 +68,8 @@ export class Home extends React.Component<RouteComponentProps<{}>, State> {
                 indent = 0;
             }
 
-            var padding = '';
-            for (var i = 0; i < pad; i++) {
+            let padding = '';
+            for (let i = 0; i < pad; i++) {
                 padding += '\t';
             }
 
