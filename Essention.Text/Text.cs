@@ -2,16 +2,6 @@
 
 namespace Essention.Text
 {
-    public class Text
-    {
-        public Text(IEnumerable<Sentence> sentences)
-        {
-            Sentences = sentences;
-        }
-
-        public IEnumerable<Sentence> Sentences { get; set; }
-    }
-
     public class Sentence
     {
         public Sentence(IEnumerable<Word> words)

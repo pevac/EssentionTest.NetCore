@@ -16,17 +16,17 @@ namespace EssentionTest.Controllers
             var folder = "App_Data/Files";
             if (value.FormatType == "cvs")
             {
-                var cvsText = TextSerializer.SerializeToCvs(value.Text, value.SeparatorCvs);
+                var formatText = TextSerializer.SerializeToCvs(value.Text, value.SeparatorCvs);
                 Directory.CreateDirectory(folder);
                 using (var fileStream = new FileStream($"{folder}/cvsFile{(DateTime.Now - new DateTime()).Ticks}.cvs", FileMode.OpenOrCreate, FileAccess.ReadWrite))
                 {
                     using(var streamWriter = new StreamWriter(fileStream))
                     {
-                        streamWriter.Write(cvsText);
+                        streamWriter.Write(formatText);
                     }
                 }
 
-                return Ok(cvsText);
+                return Ok(new { formatText });
             }
             else if (value.FormatType == "xml")
             {
@@ -35,7 +35,9 @@ namespace EssentionTest.Controllers
                 Directory.CreateDirectory(folder);
                 xmlText.Save($"{folder}/xmlFile{(DateTime.Now - new DateTime()).Ticks}.xml");
 
-                return Ok(xmlText.Root);
+                var formatText = xmlText.Root.ToString();
+
+                return Ok(new { formatText });
             }
             
             return BadRequest();

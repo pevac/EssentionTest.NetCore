@@ -9,21 +9,21 @@ export class Home extends React.Component<RouteComponentProps<{}>, State> {
         this.state = {
             text: '',
             formatType: 'xml',
-            formatText: "",
+            formatText: '',
             separatorCvs: ','
         }
     }
 
     public sendText(value: TextToSerializer) {
-
         let accept: string = value.formatType == "cvs" ? 'text/plain' : 'text/xml';
-        let headers = new Headers({ 'Content-Type': 'application/json', "Accept": accept });
+        let headers = new Headers({ 'Content-Type': 'application/json', 'Accept': accept });
         let initFetch = { method: "POST", headers: headers, body: JSON.stringify(value) };
 
-        fetch('api/TextSerializer', initFetch)
+        fetch('/api/TextSerializer', initFetch)
             .then(response => response.text())
             .then(data => {
-                this.setState({ formatText: data });
+                let content = JSON.parse(data);
+                this.setState({ formatText: content['formatText'] });
             });
     }
 
@@ -47,85 +47,132 @@ export class Home extends React.Component<RouteComponentProps<{}>, State> {
         this.setState({ separatorCvs: event.target.value })
     }
 
-    public formatXml(xml:any) {
-        let formatted = '';
-        let reg = /(>)(<)(\/*)/g;
-        xml = xml.replace(reg, '$1\r\n$2$3');
-        let pad = 0;
-        let xmlArr = xml.split('\r\n');
-        let xmlMap = xmlArr.map(function (node: any, index: any) {
-            
-            let indent = 0;
-            if (node.match(/.+<\/\w[^>]*>$/)) {
-                indent = 0;
-            } else if (node.match(/^<\/\w/)) {
-                if (pad != 0) {
-                    pad -= 1;
-                }
-            } else if (node.match(/^<\w[^>]*[^\/]>.*$/)) {
-                indent = 1;
-            } else {
-                indent = 0;
+    public formatPrettyXml(xml: any) {
+        if (xml.match('\W')) { return xml; }
+
+        let reg: RegExp = /(>)\s*(<)(\/*)/g;
+        let element: JSX.Element[] = [];
+        let wsexp: RegExp = / *(.*) +\n/g;
+        let contexp: RegExp = /(<.+>)(.+\n)/g;
+
+        let pad: number = 0;
+        let formatted: string = '';
+        let indent: number = 0;
+        let lastType: string = 'other';
+        let transitions: any = {
+            'single->single': 0,
+            'single->closing': -1,
+            'single->opening': 0,
+            'single->other': 0,
+            'closing->single': 0,
+            'closing->closing': -1,
+            'closing->opening': 0,
+            'closing->other': 0,
+            'opening->single': 1,
+            'opening->closing': 0,
+            'opening->opening': 1,
+            'opening->other': 1,
+            'other->single': 0,
+            'other->closing': -1,
+            'other->opening': 0,
+            'other->other': 0
+        };
+
+        let lines: any = xml.replace(reg, '$1\n$2$3').replace(wsexp, '$1\n').replace(contexp, '$1\n$2').split('\n');
+
+        for (let i = 0; i < lines.length; i++) {
+            let ln: any = lines[i];
+
+            if (ln.match(/\s*<\?xml/)) {
+                formatted += `${ln}\n`;
+                continue;
             }
 
-            let padding = '';
-            for (let i = 0; i < pad; i++) {
+            let single: boolean = Boolean(ln.match(/<.+\/>/));
+            let closing: boolean = Boolean(ln.match(/<\/.+>/)); 
+            let opening: boolean = Boolean(ln.match(/<[^!].*>/)); 
+
+            let type: string = single ? 'single' : closing ? 'closing' : opening ? 'opening' : 'other';
+            let fromTo: string = `${lastType}->${type}`;
+            lastType = type;
+            let padding: string = '';
+
+            indent += transitions[fromTo];
+
+            for (let j = 0; j < indent; j++) {
                 padding += '\t';
             }
+            if (fromTo == 'opening->closing') {
+                formatted = `${formatted.substr(0, formatted.length - 1)}${ln}\n`; 
+            } else {
+                formatted += `${padding}${ln}\n`;
+            }
+        }
 
-            formatted += padding + node + '\r\n';
-            pad += indent;
-        })
-
-        return formatted;
+       return formatted;
     }
 
     public render() {
         return (
             <div>
-                <form>
-                    <div className="form-group">
-                        <label >Example textarea*</label>
-                        <textarea className="form-control" onChange={(event) => this.handleTextChange(event)} rows={8} maxLength={2500} max={100} required></textarea>
+                {this.renderForm()}
+                {this.renderConsole()}
+            </div>
+        );
+    }
+
+    public renderConsole() {
+        let content = this.formatPrettyXml(this.state.formatText);
+
+        return (
+            <div className="console" style={{ whiteSpace: 'pre', border: '1px solid lightgray', overflow: 'auto' }} >{content}</div>
+        )
+    }
+
+    public  renderForm() {
+        return (
+            <form>
+                <div className="form-group">
+                    <label >Example textarea*</label>
+                    <textarea className="form-control" onChange={(event) => this.handleTextChange(event)} rows={8} maxLength={2500} max={100} required></textarea>
+                </div>
+                <div className="form-group">
+                    <label>Format*</label>
+                    <div className="form-check form-check-inline">
+                        <label className="form-check-label">
+                            <input className="form-check-input" type="radio" name="formatType" id="inlineRadio1" value="xml"
+                                checked={this.state.formatType == 'xml'} onChange={(event) => this.handleFormatTypeChange(event)} required />xml
+                        </label>
                     </div>
-                    <div className="form-group">
-                        <label>Format*</label>
-                        <div className="form-check form-check-inline">
-                            <label className="form-check-label">
-                                <input className="form-check-input" type="radio" name="formatType" id="inlineRadio1" value="xml"
-                                    checked={this.state.formatType == 'xml'} onChange={(event) => this.handleFormatTypeChange(event)} required/>xml
-                            </label>
-                        </div>
-                        <div className="form-check form-check-inline">
-                            <label className="form-check-label">
-                                <input className="form-check-input" type="radio" name="formatType" id="inlineRadio2" value="cvs"
-                                    checked={this.state.formatType == 'cvs'} onChange={(event) => this.handleFormatTypeChange(event)} required/>cvs
-                            </label>
-                        </div>
+                    <div className="form-check form-check-inline">
+                        <label className="form-check-label">
+                            <input className="form-check-input" type="radio" name="formatType" id="inlineRadio2" value="cvs"
+                                checked={this.state.formatType == 'cvs'} onChange={(event) => this.handleFormatTypeChange(event)} required />cvs
+                        </label>
                     </div>
-                    <div className="form-group">
-                        <label>Separator</label>
-                        <div className="form-check form-check-inline">
-                            <label className="form-check-label">
-                                <input className="form-check-input" disabled={this.state.formatType != "cvs"} type="radio" name="separatorCvs"
-                                    id="inlineRadio3" value="," checked={this.state.separatorCvs == ','} onChange={(event) => this.handleSeparatorCvsTypeChange(event)} />comma
-                            </label>
-                        </div>
-                        <div className="form-check form-check-inline">
-                            <label className="form-check-label">
-                                <input className="form-check-input" disabled={this.state.formatType != "cvs"} type="radio" name="separatorCvs"
-                                    id="inlineRadio4" value="||" checked={this.state.separatorCvs == '||'} onChange={(event) => this.handleSeparatorCvsTypeChange(event)} />||
-                            </label>
-                        </div>
+                </div>
+                <div className="form-group">
+                    <label>Separator</label>
+                    <div className="form-check form-check-inline">
+                        <label className="form-check-label">
+                            <input className="form-check-input" disabled={this.state.formatType != "cvs"} type="radio" name="separatorCvs"
+                                id="inlineRadio3" value="," checked={this.state.separatorCvs == ','} onChange={(event) => this.handleSeparatorCvsTypeChange(event)} />comma
+                        </label>
                     </div>
-                    <div className="form-group row">
-                        <div className="col-sm-10">
-                            <button type="button" className="btn btn-primary" onClick={() => this.handleTextSend()}>Format</button>
-                        </div>
+                    <div className="form-check form-check-inline">
+                        <label className="form-check-label">
+                            <input className="form-check-input" disabled={this.state.formatType != "cvs"} type="radio" name="separatorCvs"
+                                id="inlineRadio4" value="||" checked={this.state.separatorCvs == '||'} onChange={(event) => this.handleSeparatorCvsTypeChange(event)} />||
+                        </label>
                     </div>
-                </form>
-                <div className="console" style={{ whiteSpace: 'pre', border: '1px solid lightgray', overflow: 'auto' }} >{this.formatXml(this.state.formatText)}</div>
-            </div>);
+                </div>
+                <div className="form-group row">
+                    <div className="col-sm-10">
+                        <button type="button" className="btn btn-primary" onClick={() => this.handleTextSend()}>Format</button>
+                    </div>
+                </div>
+            </form>
+        )
     }
 }
 

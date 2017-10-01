@@ -21,7 +21,7 @@ function renderApp() {
 
 renderApp();
 
-// Allow Hot Module Replacement
+ //Allow Hot Module Replacement
 if (module.hot) {
     module.hot.accept('./routes', () => {
         routes = require<typeof RoutesModule>('./routes').routes;

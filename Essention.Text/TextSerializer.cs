@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
@@ -7,30 +8,30 @@ namespace Essention.Text
 {
     public static class TextSerializer
     {
-        private static Text CreateText(string text)
+        private static IEnumerable<Sentence> GetSentences(string text)
         {
             char[] delimiterSentenceChars = { '.', '?', '!' };
             var sentenses = text.Split(delimiterSentenceChars);
 
-            var sentensesObj = sentenses
+            var sentenceCollection = sentenses
                 .Where(s => !string.IsNullOrWhiteSpace(s))
                 .Select((s) => {
                     var pattern = @"\W";
                     var strWords = Regex.Replace(s, pattern, " ").Split(' ');
-                   
+
                     var words = strWords.Where(w => !string.IsNullOrWhiteSpace(w))
                         .OrderBy(w => w)
                         .Select(w => new Word(w));
                     return new Sentence(words);
                 });
 
-            return new Text(sentensesObj);
+            return sentenceCollection;
         }
 
         public static string SerializeToCvs(string inputText, string seperator = ",")
         {
-            var text = CreateText(inputText);
-            var csvHeaderColCount = text.Sentences.Select(x => x.Words.ToArray().Length).ToArray().Max();
+            var sentences = GetSentences(inputText);
+            var csvHeaderColCount = sentences.Select(x => x.Words.ToArray().Length).ToArray().Max();
             var currentRow = 0;
             var returnString = "";
 
@@ -39,7 +40,7 @@ namespace Essention.Text
                 returnString = $"{returnString}{seperator}Word {i + 1}";
             }
 
-            foreach (var sentence in text.Sentences)
+            foreach (var sentence in sentences)
             {
                 var currentColumn = 0;
                 var lineString = $"Sentence {++currentRow}";
@@ -58,10 +59,10 @@ namespace Essention.Text
 
         public static XDocument SerializeToXml(string inputText)
         {
-            var text = CreateText(inputText);
+            var sentences = GetSentences(inputText);
 
             var textToXml = new XElement("text",
-                text.Sentences
+                sentences
                 .Select(s => {
                     return new XElement("sentence", s.Words
                          .Select(w => new XElement("word", w.Value)));
