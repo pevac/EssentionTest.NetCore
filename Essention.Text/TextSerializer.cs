@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Xml.Linq;
 
 namespace Essention.Text
@@ -14,7 +15,9 @@ namespace Essention.Text
             var sentensesObj = sentenses
                 .Where(s => !string.IsNullOrWhiteSpace(s))
                 .Select((s) => {
-                    var strWords = s.Replace(',', ' ').Replace('\n', ' ').Split(' ');
+                    var pattern = @"\W";
+                    var strWords = Regex.Replace(s, pattern, " ").Split(' ');
+                   
                     var words = strWords.Where(w => !string.IsNullOrWhiteSpace(w))
                         .OrderBy(w => w)
                         .Select(w => new Word(w));
@@ -24,7 +27,7 @@ namespace Essention.Text
             return new Text(sentensesObj);
         }
 
-        public static string SerializeToCvs(string inputText, string seperator = ", ")
+        public static string SerializeToCvs(string inputText, string seperator = ",")
         {
             var text = CreateText(inputText);
             var csvHeaderColCount = text.Sentences.Select(x => x.Words.ToArray().Length).ToArray().Max();
@@ -53,7 +56,7 @@ namespace Essention.Text
             return returnString;
         }
 
-        public static XElement SerializeToXml(string inputText)
+        public static XDocument SerializeToXml(string inputText)
         {
             var text = CreateText(inputText);
 
@@ -64,7 +67,9 @@ namespace Essention.Text
                          .Select(w => new XElement("word", w.Value)));
                 }));
 
-            return textToXml;
+            XDocument xmlDoc = new XDocument(new XDeclaration("1.0", "UTF-8", "yes"), textToXml);
+
+            return xmlDoc;
         }
     }
 }
